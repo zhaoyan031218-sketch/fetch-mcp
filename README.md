@@ -51,6 +51,52 @@ Add to your MCP client configuration:
 }
 ```
 
+### As a remote HTTP server (Zeabur, Docker, any cloud host)
+
+The server also supports the [Streamable HTTP transport](https://modelcontextprotocol.io/docs/concepts/transports#streamable-http), so it can run on a cloud host and be used from MCP clients that support remote servers (mobile apps, web clients, etc.).
+
+Start it locally with:
+
+```bash
+bun run start:http
+# or after building: node dist/http.js
+```
+
+The MCP endpoint is served at `POST /mcp`, with a health check at `GET /health`. Configuration is via environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `PORT` | Port to listen on (default: `3000`) |
+| `MCP_AUTH_TOKEN` | If set, requests to `/mcp` must include an `Authorization: Bearer <token>` header. **Strongly recommended for public deployments** — without it, anyone who finds your URL can use your server to fetch arbitrary content. |
+
+#### Deploying to Zeabur
+
+1. Fork or push this repository to your GitHub account.
+2. In the [Zeabur dashboard](https://zeabur.com), create a project and add a **Git service** pointing at the repository. The included `Dockerfile` is detected and built automatically.
+3. In the service's **Variables** tab, add `MCP_AUTH_TOKEN` with a long random value (e.g. the output of `openssl rand -hex 32`). Zeabur injects `PORT` automatically.
+4. In the **Networking** tab, generate a public domain (e.g. `your-app.zeabur.app`).
+
+Your MCP endpoint is then `https://your-app.zeabur.app/mcp`. In any MCP client that supports Streamable HTTP, configure:
+
+- **URL**: `https://your-app.zeabur.app/mcp`
+- **Header**: `Authorization: Bearer <your MCP_AUTH_TOKEN>`
+
+Or in a JSON-based client configuration:
+
+```json
+{
+  "mcpServers": {
+    "fetch": {
+      "type": "http",
+      "url": "https://your-app.zeabur.app/mcp",
+      "headers": {
+        "Authorization": "Bearer <your MCP_AUTH_TOKEN>"
+      }
+    }
+  }
+}
+```
+
 ### As a CLI
 
 ```bash
@@ -117,6 +163,8 @@ mcp-fetch json https://api.example.com/data --proxy http://proxy:8080
 |----------|-------------|
 | `DEFAULT_LIMIT` | Default character limit for responses (default: `5000`, set to `0` for no limit) |
 | `MAX_RESPONSE_BYTES` | Maximum response body size in bytes (default: `10485760` / 10 MB) |
+| `PORT` | HTTP mode only: port to listen on (default: `3000`) |
+| `MCP_AUTH_TOKEN` | HTTP mode only: Bearer token required on `/mcp` requests |
 
 Example with a custom limit:
 
@@ -137,6 +185,7 @@ Example with a custom limit:
 ## Features
 
 - Fetch web content as HTML, JSON, plain text, or Markdown
+- Runs locally over stdio or remotely over Streamable HTTP (with Bearer token auth)
 - Extract article content with Mozilla Readability (strips ads, nav, boilerplate)
 - Extract YouTube video transcripts (via `yt-dlp` or direct extraction)
 - Proxy support for requests behind firewalls
