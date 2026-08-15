@@ -2,7 +2,7 @@ FROM oven/bun:1-slim
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml ./
+COPY package.json ./
 RUN bun install --production
 
 COPY tsconfig.json ./
